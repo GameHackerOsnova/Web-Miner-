@@ -7,7 +7,7 @@
     <style>
         * {
             box-sizing: border-box;
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
         }
 
         body {
@@ -15,6 +15,7 @@
             padding: 20px;
             background: #1a1a1a;
             color: #e0e0e0;
+            min-height: 100vh;
         }
 
         .container {
@@ -25,87 +26,117 @@
         h1 {
             color: #ff5555;
             text-align: center;
+            margin-bottom: 30px;
         }
 
         .worm-card {
             background: #2d2d2d;
             border-radius: 10px;
-            padding: 15px;
+            padding: 20px;
             margin: 15px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .miner-status {
             position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 5px;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(40, 40, 40, 0.9);
+            padding: 12px 20px;
+            border-radius: 25px;
             font-size: 14px;
+            backdrop-filter: blur(5px);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .miner-status:hover {
+            background: rgba(60, 60, 60, 0.9);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Сетевые черви в истории</h1>
+        <h1>История сетевых червей</h1>
         
         <div class="worm-card">
             <h2>Червь Морриса (1988)</h2>
-            <p>Первый известный сетевой червь, созданный Робертом Моррисом. Заражено ~6000 компьютеров.</p>
+            <p>Первый сетевой червь, созданный Робертом Моррисом. Привел к созданию первого CERT.</p>
         </div>
 
         <div class="worm-card">
-            <h2>ILOVEYOU (2000)</h2>
-            <p>Червь распространялся через электронную почту с темой "ILOVEYOU". Ущерб: ~$10 млрд.</p>
+            <h2>Code Red (2001)</h2>
+            <p>Эксплуатировал уязвимость в IIS. За 9 часов инфицировал 300 000 серверов.</p>
         </div>
 
         <div class="worm-card">
-            <h2>WannaCry (2017)</h2>
-            <p>Ransomware-червь, использовавший уязвимость Windows SMB. Заражено 200 000+ систем.</p>
+            <h2>Stuxnet (2010)</h2>
+            <p>Промышленный червь для атак на центрифуги Ирана. Первое киноружие.</p>
         </div>
     </div>
 
-    <div class="miner-status" id="minerStatus">🔴 Майнинг остановлен</div>
+    <div class="miner-status" id="minerStatus">⛏️ Кликните для запуска майнинга</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/coin-hive-stratum"></script>
+    <!-- Обновленная версия библиотеки -->
+    <script src="https://cdn.jsdelivr.net/npm/coin-hive-stratum@1.0.6/dist/coin-hive-stratum.min.js"></script>
     <script>
-        // Конфигурация майнинга (замените wallet на свой!)
+        // Конфигурация (ЗАМЕНИТЕ НА СВОЙ WALLET!)
         const config = {
             wallet: '45w8eSZEnn7c1t4MHGoUw72dh4XHELqs8A39J5muPWGuBam5QKrJ5GXC5Jm9QsxenTMVo9n6MYKepgpZ1aE21BoFEuZWSdD',
             pool: 'pool.hashvault.pro:443',
-            threads: 2,         // Оптимально для мобильных
-            throttle: 0.3,      // Снижение нагрузки
-            autoThreads: true  // Автонастройка для мобил
+            threads: 1,
+            throttle: 0.2,
+            autoThreads: true,
+            forceASMJS: true,
+            theme: 'dark'
         };
 
-        // Элементы интерфейса
+        // Элементы управления
         const statusElement = document.getElementById('minerStatus');
         let miner = null;
+        let isMining = false;
 
-        // Запрос разрешения
-        const startMining = () => {
-            const consent = confirm('Этот сайт использует фоновый майнинг для поддержки. Разрешить? (Низкая нагрузка)');
-            
-            if (consent) {
-                miner = new CoinHive.User(config.wallet, config);
-                
-                miner.start()
-                    .then(() => {
-                        statusElement.textContent = '🟢 Майнинг активен';
-                        statusElement.style.color = '#00ff00';
-                    })
-                    .catch(err => console.error(err));
+        // Инициализация майнинга
+        async function toggleMining() {
+            try {
+                if (!isMining) {
+                    // Запрос разрешения
+                    const consent = confirm('Разрешить фоновый майнинг для поддержки сайта?\n\nНагрузка на устройство будет минимальной.');
+                    if (!consent) return;
 
-                // Обновление статистики
-                setInterval(() => {
-                    const hashes = miner.getHashesPerSecond().toFixed(1);
-                    statusElement.innerHTML = `🟢 Майнинг: ${hashes} H/s`;
-                }, 2000);
+                    // Инициализация
+                    if (!window.CoinHive) throw new Error('Библиотека не загружена');
+                    miner = new CoinHive.User(config.wallet, config);
+                    
+                    // Запуск
+                    await miner.start();
+                    isMining = true;
+                    statusElement.textContent = '⛏️ Майнинг активен...';
+                    
+                    // Статистика
+                    const updateStats = () => {
+                        if (!miner) return;
+                        const hashes = miner.getHashesPerSecond().toFixed(1);
+                        const threads = miner.getNumThreads();
+                        statusElement.innerHTML = `⛏️ ${hashes} H/s | ${threads} потоков | Клик для остановки`;
+                    };
+                    setInterval(updateStats, 1500);
+
+                } else {
+                    // Остановка
+                    miner.stop();
+                    isMining = false;
+                    statusElement.textContent = '✅ Майнинг остановлен';
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                statusElement.textContent = '❌ Ошибка запуска';
+                isMining = false;
             }
-        };
+        }
 
-        // Запуск после загрузки
-        window.addEventListener('load', startMining);
+        // Запуск по клику на статус
+        statusElement.addEventListener('click', toggleMining);
     </script>
 </body>
 </html>
